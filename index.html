@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>米国警察认证考试系统</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        /* 全局样式,别他妈给我乱改 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #FFFFFF;
+            color: #0000FF;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #FFFFFF;
+            border: 3px solid #0000FF;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 255, 0.15);
+            position: relative;
+            transform: translateY(0);
+            animation: floatContainer 6s ease-in-out infinite;
+        }
+        
+        @keyframes floatContainer {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .header {
+            background: #0000FF;
+            color: #FFFFFF;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(45deg, #0000ff, #4e54c8, #8f94fb);
+            z-index: -1;
+            filter: blur(20px);
+            opacity: 0.4;
+            animation: gradientShift 12s ease infinite;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
+            animation: textGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes textGlow {
+            from { text-shadow: 0 0 5px rgba(255,255,255,0.3); }
+            to { text-shadow: 0 0 15px rgba(255,255,255,0.7); }
+        }
+        
+        .section {
+            display: none;
+            padding: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+        }
+        
+        .active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            animation: fadeInScale 0.5s ease-out;
+        }
+        
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+            70% { transform: scale(1.05); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .card {
+            padding: 25px;
+            border-bottom: 2px solid rgba(0, 0, 255, 0.1);
+            transform: perspective(1000px) rotateX(0);
+            transition: transform 0.4s ease;
+        }
+        
+        .card:hover {
+            transform: perspective(1000px) rotateX(3deg);
+        }
+        
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #0000FF;
+            border-left: 4px solid #0000FF;
+            padding-left: 10px;
+            animation: slideInLeft 0.6s ease-out;
+        }
+        
+        @keyframes slideInLeft {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid #0000FF;
+            border-radius: 6px;
+            font-size: 16px;
+            background: rgba(0, 0, 255, 0.02);
+            transition: all 0.3s ease;
+            animation: inputAppear 0.5s ease-out;
+        }
+        
+        @keyframes inputAppear {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #4e54c8;
+            box-shadow: 0 0 0 3px rgba(78, 84, 200, 0.3);
+            animation: inputPulse 1.5s infinite;
+        }
+        
+        @keyframes inputPulse {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(78, 84, 200, 0.3); }
+            50% { box-shadow: 0 0 0 6px rgba(78, 84, 200, 0.1); }
+        }
+        
+        .btn {
+            background: #0000FF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+            margin: 10px 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+            animation: buttonAppear 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes buttonAppear {
+            0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .btn::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        .btn:active::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(200, 200);
+                opacity: 0;
+            }
+        }
+        
+        .btn:hover {
+            background: #0000CC;
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 15px rgba(0, 0, 255, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: 0 2px 4px rgba(0, 0, 255, 0.2);
+        }
+        
+        #timer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #0000FF;
+            color: #FFFFFF;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            z-index: 10;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .question {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #FFFFFF;
+            border-radius: 8px;
+            border-left: 4px solid #0000FF;
+            box-shadow: 0 3px 10px rgba(0, 0, 255, 0.1);
+            transition: all 0.3s;
+            animation: questionAppear 0.6s ease-out;
+        }
+        
+        @keyframes questionAppear {
+            0% { opacity: 0; transform: translateX(-10px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        
+        .question:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(0, 0, 255, 0.2);
+        }
+        
+        .options label {
+            display: block;
+            padding: 12px;
+            margin: 10px 0;
+            background: #FFFFFF;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid rgba(0, 0, 255, 0.2);
+            animation: optionAppear 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        @keyframes optionAppear {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .options input[type="radio"]:checked + span {
+            font-weight: bold;
+            color: #0000FF;
+            animation: optionSelect 0.3s ease-out;
+        }
+        
+        @keyframes optionSelect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .options label:hover {
+            background: rgba(0, 0, 255, 0.08);
+            border-color: rgba(0, 0, 255, 0.4);
+            transform: translateX(5px);
+        }
+        
+        .options input {
+            margin-right: 10px;
+            transform: scale(1.1);
+            width: auto;
+        }
+        
+        .question-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .result-container {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid #0000FF;
+            border-radius: 8px;
+            background: rgba(0, 0, 255, 0.02);
+            animation: resultContainerAppear 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes resultContainerAppear {
+            0% { opacity: 0; transform: scale(0.8) rotateX(90deg); }
+            100% { opacity: 1; transform: scale(1) rotateX(0); }
+        }
+        
+        .result-item {
+            margin: 15px 0;
+            font-size: 18px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 0, 255, 0.1);
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .encryption-box {
+            padding: 15px;
+            margin-top: 20px;
+            border: 2px dashed #0000FF;
+            border-radius: 8px;
+            background: rgba(0, 0, 255, 0.03);
+            animation: encryptionBoxAppear 0.8s ease-out;
+        }
+        
+        @keyframes encryptionBoxAppear {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        .encryption-code {
+            font-family: monospace;
+            background: rgba(0, 0, 255, 0.05);
+            padding: 10px;
+            border-radius: 5px;
+            word-break: break-all;
+            margin: 10px 0;
+            font-size: 14px;
+            animation: codeAppear 1s ease-out;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        @keyframes codeAppear {
+            0% { max-height: 0; opacity: 0; }
+            100% { max-height: 500px; opacity: 1; }
+        }
+        
+        .pass {
+            color: #0000FF;
+            font-weight: bold;
+            font-size: 20px;
+            animation: passAppear 1s ease-out;
+        }
+        
+        @keyframes passAppear {
+            0% { opacity: 0; letter-spacing: -5px; }
+            100% { opacity: 1; letter-spacing: normal; }
+        }
+        
+        .fail {
+            color: #FF0000;
+            font-weight: bold;
+            font-size: 20px;
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid #0000FF;
+            border-radius: 6px;
+            font-size: 14px;
+            height: 120px;
+            resize: vertical;
+            background: rgba(0, 0, 255, 0.02);
+            transition: all 0.3s ease;
+            animation: textareaAppear 0.5s ease-out;
+        }
+        
+        @keyframes textareaAppear {
+            from { opacity: 0; height: 0; }
+            to { opacity: 1; height: 120px; }
+        }
+        
+        textarea:focus {
+            border-color: #4e54c8;
+            box-shadow: 0 0 0 3px rgba(78, 84, 200, 0.3);
+        }
+        
+        .verification-result {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 6px;
+            display: none;
+            animation: verificationAppear 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes verificationAppear {
+            0% { opacity: 0; transform: translateY(30px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .valid {
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00FF00;
+            display: block;
+            animation: validPulse 2s infinite;
+        }
+        
+        @keyframes validPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.2); }
+            50% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); }
+        }
+        
+        .invalid {
+            background: rgba(255, 0, 0, 0.1);
+            border: 2px solid #FF0000;
+            display: block;
+            animation: invalidShake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        .warning-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none;
+            animation: warningAppear 0.3s ease-out;
+        }
+        
+        @keyframes warningAppear {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .warning-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+            border: 3px solid #FF0000;
+            animation: shake 0.5s, pulseWarning 2s infinite;
+        }
+        
+        @keyframes pulseWarning {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
+        }
+        
+        .warning-title {
+            color: #FF0000;
+            font-size: 28px;
+            margin-bottom: 20px;
+            animation: textGlowRed 1s ease-in-out infinite alternate;
+        }
+        
+        @keyframes textGlowRed {
+            from { text-shadow: 0 0 5px rgba(255,0,0,0.3); }
+            to { text-shadow: 0 0 15px rgba(255,0,0,0.7); }
+        }
+        
+        .warning-message {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+            line-height: 1.6;
+            animation: fadeIn 1s ease-out;
+        }
+        
+        .cheating-detected {
+            background-color: #FF0000 !important;
+            animation: flashBackground 1s infinite;
+        }
+        
+        @keyframes flashBackground {
+            0% { background-color: #FF0000; }
+            50% { background-color: #880000; }
+            100% { background-color: #FF0000; }
+        }
+        
+        .cert-level {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-left: 10px;
+            animation: levelAppear 0.6s ease-out;
+        }
+        
+        @keyframes levelAppear {
+            0% { opacity: 0; transform: scale(0.5); }
+            70% { transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .level-s {
+            background: linear-gradient(to right, #ffd700, #ffa500);
+            color: #000;
+            animation: goldGlow 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes goldGlow {
+            from { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+            to { box-shadow: 0 0 15px rgba(255, 215, 0, 0.8); }
+        }
+        
+        .level-b {
+            background: linear-gradient(to right, #c0c0c0, #a9a9a9);
+            color: #fff;
+            animation: silverShine 2s ease-in-out infinite;
+        }
+        
+        @keyframes silverShine {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .level-a {
+            background: linear-gradient(to right, #cd7f32, #a0522d);
+            color: #fff;
+            animation: bronzePulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes bronzePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        
+        .level-none {
+            background: #f0f0f0;
+            color: #777;
+        }
+        
+        .level-info {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(0, 0, 255, 0.05);
+            border-left: 4px solid #0000FF;
+            animation: infoSlide 0.5s ease-out;
+        }
+        
+        @keyframes infoSlide {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                border-width: 2px;
+                animation: mobileFloat 4s ease-in-out infinite;
+            }
+            
+            @keyframes mobileFloat {
+                0%, 100% { transform: translateY(0) rotate(0.5deg); }
+                50% { transform: translateY(-5px) rotate(-0.5deg); }
+            }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            #timer {
+                position: relative;
+                top: 0;
+                right: 0;
+                width: fit-content;
+                margin: 0 auto 15px;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+        
+        /* 史诗级动画 */
+        .animate-pop {
+            animation: pop 0.3s ease-out;
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .animate-slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-bounce {
+            animation: bounce 0.5s ease-out;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-15px);}
+            60% {transform: translateY(-7px);}
+        }
+        
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 255, 0.1);
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #0000FF;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease-out;
+            animation: progressPulse 2s infinite;
+        }
+        
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* 分数滚动动画 */
+        .score-counter {
+            display: inline-block;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        
+        /* 题目切换动画 */
+        .question-transition {
+            animation: questionTransition 0.5s ease-out;
+        }
+        
+        @keyframes questionTransition {
+            0% { opacity: 0; transform: translateX(50px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* 答案正确/错误动画 */
+        .answer-correct {
+            animation: answerCorrect 1s ease-out;
+        }
+        
+        @keyframes answerCorrect {
+            0% { background: rgba(0, 255, 0, 0.1); }
+            100% { background: transparent; }
+        }
+        
+        .answer-incorrect {
+            animation: answerIncorrect 1s ease-out;
+        }
+        
+        @keyframes answerIncorrect {
+            0% { background: rgba(255, 0, 0, 0.1); }
+            100% { background: transparent; }
+        }
+    </style>
+</head>
+<body id="v1">
+    <!-- 作弊警告 -->
+    <div class="warning-container" id="warning-box">
+        <div id="v2" class="warning-box">
+            <div id="v3" class="warning-title">
+                警告 
+            </div>
+            <div id="v4" class="warning-message">
+                检测到作弊行为！ 
+                <br id="v5"> 系统已记录此次违规操作，考试被终止。 
+                <br id="v6"> 任何试图绕过考试系统的行为都会导致考试成绩无效。（爱丽丝会永远视奸你的） 
+            </div>
+            <button class="btn" style="background:#FF0000;" id="close-warning">确认</button>
+        </div>
+    </div>
+    
+    <!-- 考试系统 -->
+    <div id="v7" class="container">
+        <div id="v8" class="header">
+            <h1 id="v9">米国警察认证考试系统</h1>
+            <p id="v10">砖业认证 · 包不公平公正 · 危险可靠</p>
+        </div>
+        
+        <!-- 身份验证模块 -->
+        <div id="auth-section" class="section active">
+            <div id="v11" class="card">
+                <h2 id="v12">米国身份认证</h2>
+                <input type="text" id="user-name" placeholder="请输入您的姓名" required> 
+                <button id="start-exam" class="btn">GO！</button>
+                <div id="v13" style="margin-top: 20px; padding: 15px; border: 2px dashed #0000FF; border-radius: 8px; background: rgba(0,0,255,0.05);">
+                    <h3 id="v14">考试规则</h3>
+                    <ul id="v15" style="margin-left: 20px;">
+                        <li id="v16">考试共10题，限时10分钟</li>
+                        <li id="v17">考试过程中禁止使用右键菜单</li>
+                        <li id="v18">禁止切换标签页或打开新窗口</li>
+                        <li id="v19">考试过程中，爱丽丝会永远视奸你，请自便</li>
+                        <li id="v20">黑奴爱丽丝检测到违规行为将直接判定作弊，并且把你打断双腿</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 考试界面 -->
+        <div id="exam-section" class="section">
+            <div id="timer">
+                剩余时间: 09:54
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="time-progress"></div>
+            </div>
+            <div id="v21" class="card">
+                <h2 id="v22">米国警察认证考试</h2>
+                <div id="question-counter">
+                    题目 8/10
+                </div>
+                <div id="current-question" class="question-transition">
+                    <div class="question">
+                        <h3>5. 人机检测，本题请选3</h3>
+                        <div class="options">
+                            <label> <input type="radio" name="currentQuestion" value="0"> 总线型 </label>
+                            <label> <input type="radio" name="currentQuestion" value="1"> 星型 </label>
+                            <label> <input type="radio" name="currentQuestion" value="2"> 环型 </label>
+                            <label> <input type="radio" name="currentQuestion" value="3"> 矩阵型 </label>
+                        </div>
+                    </div>
+                </div>
+                <div id="v23" class="question-nav">
+                    <button id="prev-question" class="btn">上一题</button>
+                    <button id="next-question" class="btn">下一题</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 成绩展示 -->
+        <div id="result-section" class="section">
+            <div id="v24" class="card">
+                <h2 id="v25">考试成绩</h2>
+                <div id="v26" class="result-container">
+                    <div id="v27" class="result-item">
+                        考生姓名: 
+                        <span id="result-name"></span>
+                    </div>
+                    <div id="v28" class="result-item">
+                        考试成绩: 
+                        <span id="result-score" class="score-counter">0</span>分 
+                    </div>
+                    <div id="v29" class="result-item">
+                        认证等级: 
+                        <span id="result-level"></span>
+                    </div>
+                    <div id="v30" class="result-item">
+                        考试结果: 
+                        <span id="result-pass"></span>
+                    </div>
+                    <div id="v31" class="result-item">
+                        考试状态: 
+                        <span id="cheat-status">正常</span>
+                    </div>
+                </div>
+                <div class="level-info" id="level-info">
+                    <strong id="v32">认证等级说明:</strong>
+                    <p id="v33">CS级（90-100分）：高级出生</p>
+                    <p id="v34">SB级（80-89分）：小出生</p>
+                    <p id="v35">RZ级（70-79分）：出生</p>
+                    <p id="v36">70分以下：未获得认证</p>
+                </div>
+                <div id="v37" class="encryption-box">
+                    <h3 id="v38">加密成绩单</h3>
+                    <p id="v39">密钥：</p>
+                    <div class="encryption-code" id="encryption-key"></div>
+                    <p id="v40">密文：</p>
+                    <div class="encryption-code" id="encrypted-data"></div>
+                    <button id="export-btn" class="btn">导出成绩单</button>
+                </div>
+                <button id="decrypt-link" class="btn" style="margin-top: 15px; background: #FFFFFF; color: #0000FF; border: 2px solid #0000FF;">
+                    验证成绩单
+                </button>
+            </div>
+        </div>
+        
+        <!-- 解密页面 -->
+        <div id="decrypt-section" class="section">
+            <div id="v41" class="card">
+                <h2 id="v42">成绩单验证</h2>
+                <p id="v43">粘贴密钥和加密数据验证成绩单真伪：</p>
+                <div id="v44">
+                    <label id="v45" for="decrypt-key-input">解密密钥：</label>
+                    <input type="text" id="decrypt-key-input" placeholder="输入解密密钥">
+                </div>
+                <div id="v46">
+                    <label id="v47" for="encrypted-text">加密数据：</label>
+                    <textarea id="encrypted-text" placeholder="粘贴加密数据"></textarea>
+                </div>
+                <button id="decrypt-btn" class="btn">验证成绩单</button>
+                <div id="decrypt-result" class="verification-result">
+                    <h3 id="v48">验证结果</h3>
+                    <div id="decrypted-content"></div>
+                </div>
+                <button id="back-to-exam" class="btn" style="background: #FFFFFF; color: #0000FF; border: 2px solid #0000FF; margin-top: 20px;">
+                    返回考试系统
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 全局变量 ===
+        const QUESTION_POOL_SIZE = 40;
+        const EXAM_QUESTIONS_COUNT = 10; // 改为10题
+        let examData = [];
+        let userAnswers = [];
+        let timerInterval;
+        let cheatDetectionInterval;
+        let timeLeft = 10 * 60; // 10分钟
+        let currentUser = {
+            name: "",
+            level: "",
+            score: 0,
+            cheated: false,
+            cheatType: ""
+        };
+        let currentQuestionIndex = 0;
+        let encryptionKey = "";
+
+        // === 砖业题库（40道题）===
+        const questionBank = [
+            { id: 1, question: "星野是什么？", options: ["AI软件", "某四字游戏角色", "女鹅", "我不道啊"], answer: 1 },
+            { id: 2, question: "请浏览此网站https://aris.starsky.icu", options: ["狗都不看", "6", "不要啊", "9"], answer: 1 },
+            { id: 3, question: "对策委员会欠了多少钱？", options: ["十几亿吧", "9亿6235万", "14亿", "512亿亿亿"], answer: 1 },
+            { id: 4, question: "对策委员会为什么会欠钱？", options: ["被管家打断了双腿", "沙尘暴", "被伊朗的导弹击中了金库", "被三角洲老鼠偷吃了"], answer: 1 },
+            { id: 5, question: "人机检测，本题请选3", options: ["总线型", "星型", "环型", "矩阵型"], answer: 2 },
+            { id: 6, question: "使用哪个端口进行通信不会被网信部截获？", options: ["80", "110", "443", "8080"], answer: 1 },
+            { id: 7, question: "在信息安全中，怎样最大程度防御DDoS攻击：", options: ["拜佛祖", "请联通、移动、电信来进行IP防范", "拔网线，关服务器", "找网易采购土豆服务器"], answer: 2 },
+            { id: 8, question: "下列哪种编程语言主要用于开发苹果应用？", options: ["Java", "Kotlin", "Swift", "C#"], answer: 2 },
+            { id: 9, question: "怎样才能提升服务器性能？", options: ["去游戏开发部捉个人过来当黑奴", "找网易采购土豆服务器", "找腾讯采购最强的服务器", "找美的采购空调给机房降温"], answer: 0 },
+            { id: 10, question: "在HTML中，怎样才能快速地写出代码", options: ["使用神奇的AI力量", "直接写hello world", "去游戏开发部捉个人过来当黑奴", "使用AI agent"], answer: 2 },
+            { id: 11, question: "怎样食用矿泉水？", options: ["我喝纯净水", "烧开了喝", "我不喝", "直接喝"], answer: 0 },
+            { id: 12, question: "在CS90中，用于设置元素外边距的属性是：", options: ["padding", "CSgo?!", "margin", "spacing"], answer: 1 },
+            { id: 13, question: "你奶奶个三角篓子的", options: ["伊朗那个导弹", "直接精准定位", "把以色列", "的游戏服务器都炸掉了"], answer: 0 },
+            { id: 14, question: "下列哪个软件能把爱丽丝的户开出来？", options: ["Temperature", "纸飞机", "DNS", "微软"], answer: 1 },
+            { id: 15, question: "憧憬成为魔法少女和咎狗之血（高清无删减无打码）好看不？", options: ["6", "好看", "我不是那种人", "我不看"], answer: 0 },
+            { id: 16, question: "下列哪项不是常见的软件？", options: ["feedThe Blue File", "Google play", "Getting ", "X "], answer: 2 },
+            { id: 17, question: "在开盒中，如何获取手机号?", options: ["直查", "QQ号反查", "穷举", "None"], answer: 1 },
+            { id: 18, question: "哪个手机系统最好用？", options: ["金凡制作的澎湃OS系统", "套壳安卓的鸿蒙系统", "宇宙无敌强的ColorOS系统", "山寨机必备的free UI"], answer: 0 },
+            { id: 19, question: "下列哪项不是常见的手机？", options: ["Iphone 16 PRO max ultra长续航影像版", "小米集团", "星际魅族", "傻逼牌手机"], answer: 3 },
+            { id: 20, question: "怎样才能攻击蔚蓝档案官网并获得十年刑期", options: ["跨站脚本攻击", "跨站请求伪造", "用DDOS打爆Cdn然后注入攻击", "CC攻击"], answer: 2 },
+            { id: 21, question: "谁在拼多多提现了100万？", options: ["米哈游法务部", "南半球最强迪士尼法务部", "腾讯的南山必胜客", "任天堂的东半球最强法务部"], answer: 0 },
+            { id: 22, question: "怎样能用家里宽带赚钱并被中国移动告上法庭？", options: ["用宽带攻击别人的宽带", "把家里的宽带卖给腾讯", "在家建个土豆服务器", "把中国移动的光猫拆了卖钱"], answer: 1 },
+            { id: 23, question: "在本网站中，用于绘制爱丽丝的元素是：", options: ["高贵的人类语言文字", "Drive 标签", "爱坤插件", "某人制作的宇宙无敌究极绘画插件"], answer: 1 },
+            { id: 24, question: "在CSS中，用于设置文本居中的属性是：", options: ["align: center;", "text-align: center;", "center: true;", "position: center;"], answer: 1 },
+            { id: 25, question: "下列哪个状态码表示'未找到爱丽丝'？", options: ["200", "301", "404Female goose", "500"], answer: 2 },
+            { id: 26, question: "在JavaScript中，用于处理异步操作的语法是：", options: ["async/await", "for/while", "if/else", "try/catch"], answer: 0 },
+            { id: 27, question: "下列哪项不是常见的开发方法论？", options: ["瀑布模型", "敏捷开发", "拜佛祖", "区块链"], answer: 2 },
+            { id: 28, question: "安卓为什么不会被病毒入侵？", options: ["没权限", "黑客懒得弄", "赚不了钱", "没啥用"], answer: 2 },
+            { id: 29, question: "在网络安全中，VPN的主要作用是：", options: ["看国外的本子网站", "创建加密隧道", "过滤恶意网站", "阻止病毒传播"], answer: 0 },
+            { id: 30, question: "在JavaScript中，用于向数组末尾添加爱丽丝元素的函数是：", options: ["push()", "pop()", "shift()", "unshift()"], answer: 0 },
+            { id: 31, question: "在HTML中，用于包含外部JavaScript爱丽丝文件的属性是：", options: ["link", "src", "href", "include"], answer: 1 },
+            { id: 32, question: "下列哪项是高分子聚合材质？", options: ["米国", "高分子聚合材质", "氢氧酸", "以色列的导弹"], answer: 1 },
+            { id: 33, question: "怎样才能入职游戏开发部？", options: ["远程删掉他们的游戏存档", "帮她们把代码改成格机代码", "拔她们网线", "躺下来，闭上眼睛"], answer: 0 },
+            { id: 34, question: "在关系型数据库中，用于连接两个爱丽丝做的表的操作是：", options: ["UNION", "JOIN", "MERGE", "CONCAT"], answer: 1 },
+            { id: 35, question: "下列哪项协议用于文件传输？", options: ["QQ", "FTP", "SMTP", "SB"], answer: 1 },
+            { id: 36, question: "以下哪些人是小偷？", options: ["拿着刀的白人", "坐在飞机上的黑人", "揣着枪的亚洲人", "手上拿着核弹发射按钮的白人"], answer: 1 },
+            { id: 37, question: "在Python中，用于定义函数的语法是：", options: ["function", "你问我?我问谁!", "func", "define"], answer: 1 },
+            { id: 38, question: "下列哪项不是HTTP请求方法？", options: ["GET", "POST", "SEND", "DELETE"], answer: 2 },
+            { id: 39, question: "CS是什么意思?", options: ["畜生!", "对象云存储", "网盘", "网易的土豆服务器"], answer: 1 },
+            { id: 40, question: "在计算机科学中，怎样才能安全的玩手机", options: ["我不玩手机", "假装在学习，实际小窗开着游戏", "写个程序把爸妈删了", "用Python脚本禁锢爸妈"], answer: 1 }
+        ];
+
+        // === 防止作弊功能 ===
+        // 禁止右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // 检测作弊行为
+        const enableCheatDetection = () => {
+            // 右键点击检测
+            document.addEventListener('contextmenu', handleCheatingEvent);
+            
+            // 开发者工具检测
+            detectDevTools();
+            
+            // 窗口失焦检测
+            window.addEventListener('blur', handleWindowBlur);
+            
+            // 键盘F12检测
+            document.addEventListener('keydown', detectFunctionKeys);
+            
+            // 启动定期检测
+            cheatDetectionInterval = setInterval(detectDevTools, 1000);
+        };
+
+        const disableCheatDetection = () => {
+            // 清除所有事件监听
+            document.removeEventListener('contextmenu', handleCheatingEvent);
+            window.removeEventListener('blur', handleWindowBlur);
+            document.removeEventListener('keydown', detectFunctionKeys);
+            
+            // 清除定期检测
+            if (cheatDetectionInterval) {
+                clearInterval(cheatDetectionInterval);
+            }
+        };
+
+        const detectDevTools = () => {
+            const widthThreshold = window.outerWidth - window.innerWidth > 100;
+            const heightThreshold = window.outerHeight - window.innerHeight > 100;
+            
+            if (widthThreshold || heightThreshold) {
+                handleCheating("检测到开发者工具");
+            }
+        };
+
+        const detectFunctionKeys = (e) => {
+            // 检测F12
+            if (e.key === 'F12' || e.code === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                handleCheating("检测到F12按键");
+            }
+            // 检测Ctrl+Shift+I, Ctrl+Shift+C
+            else if ((e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                     (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+                     (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                handleCheating("检测到开发者工具快捷键");
+            }
+        };
+
+        const handleWindowBlur = () => {
+            handleCheating("窗口失去焦点（可能尝试切换标签）");
+        };
+
+        const handleCheatingEvent = (e) => {
+            handleCheating("右键菜单操作");
+            e.preventDefault();
+        };
+
+        const handleCheating = (type) => {
+            if (!document.getElementById('exam-section').classList.contains('active')) return;
+            
+            // 标记作弊状态
+            currentUser.cheated = true;
+            currentUser.cheatType = type;
+            
+            // 显示警告信息
+            document.getElementById('warning-box').style.display = 'flex';
+            document.body.classList.add('cheating-detected');
+            
+            // 10秒后自动结束考试
+            setTimeout(endExamDueToCheating, 10000);
+        };
+
+        const endExamDueToCheating = () => {
+            // 提交考试
+            submitExam();
+            
+            // 隐藏警告框
+            document.getElementById('warning-box').style.display = 'none';
+            document.body.classList.remove('cheating-detected');
+        };
+
+        // === 开始考试 ===
+        document.getElementById('start-exam').addEventListener('click', () => {
+            const userName = document.getElementById('user-name').value;
+            
+            if (!userName) {
+                alert("请填写姓名");
+                return;
+            }
+            
+            currentUser.name = userName;
+            currentUser.cheated = false;
+            currentUser.cheatType = "";
+            
+            generateExamQuestions();
+            
+            // 切换界面
+            document.getElementById('auth-section').classList.remove('active');
+            document.getElementById('exam-section').classList.add('active');
+            
+            // 启动计时器
+            startTimer();
+            
+            // 启动防作弊检测
+            enableCheatDetection();
+            
+            // 显示第一题
+            showQuestion(0);
+        });
+
+        // === 生成考试题目 ===
+        const generateExamQuestions = () => {
+            userAnswers = [];
+            
+            // 随机选择10题（Fisher-Yates洗牌算法）
+            const shuffled = [...questionBank];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            examData = shuffled.slice(0, EXAM_QUESTIONS_COUNT);
+            
+            // 初始化用户答案数组
+            for (let i = 0; i < examData.length; i++) {
+                userAnswers.push(-1); // -1表示未作答
+            }
+        };
+
+        // === 显示题目 ===
+        const showQuestion = (index) => {
+            if (index < 0 || index >= examData.length) return;
+            
+            currentQuestionIndex = index;
+            
+            // 更新题目计数器
+            document.getElementById('question-counter').textContent = 
+                `题目 ${index + 1}/${examData.length}`;
+            
+            // 获取当前题目
+            const q = examData[index];
+            
+            // 创建题目HTML
+            const questionHTML = `
+                <div class="question">
+                    <h3>${q.id}. ${q.question}</h3>
+                    <div class="options">
+                        ${q.options.map((opt, optIndex) => `
+                            <label>
+                                <input type="radio" name="currentQuestion" value="${optIndex}" 
+                                    ${userAnswers[index] === optIndex ? 'checked' : ''}>
+                                ${opt}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('current-question').innerHTML = questionHTML;
+            document.getElementById('current-question').classList.add('question-transition');
+            
+            // 添加选项动画
+            setTimeout(() => {
+                const options = document.querySelectorAll('.options label');
+                options.forEach((label, i) => {
+                    label.style.animationDelay = `${i * 0.1}s`;
+                    label.classList.add('animate-fade-in');
+                });
+            }, 10);
+            
+            // 更新按钮状态
+            document.getElementById('prev-question').disabled = (index === 0);
+            if (index === examData.length - 1) {
+                document.getElementById('next-question').textContent = '提交答卷';
+            } else {
+                document.getElementById('next-question').textContent = '下一题';
+            }
+        };
+
+        // === 保存当前答案 ===
+        const saveAnswer = () => {
+            const selected = document.querySelector('input[name="currentQuestion"]:checked');
+            if (selected) {
+                userAnswers[currentQuestionIndex] = parseInt(selected.value);
+            }
+        };
+
+        // === 上一题按钮 ===
+        document.getElementById('prev-question').addEventListener('click', () => {
+            saveAnswer();
+            showQuestion(currentQuestionIndex - 1);
+        });
+
+        // === 下一题按钮 ===
+        document.getElementById('next-question').addEventListener('click', () => {
+            saveAnswer();
+            
+            if (currentQuestionIndex === examData.length - 1) {
+                submitExam();
+            } else {
+                showQuestion(currentQuestionIndex + 1);
+            }
+        });
+
+        // === 计时器 ===
+        const startTimer = () => {
+            const timerDisplay = document.getElementById('timer');
+            const progressBar = document.getElementById('time-progress');
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                // 更新进度条
+                const progress = 100 - (timeLeft / (10 * 60)) * 100;
+                progressBar.style.width = `${progress}%`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitExam();
+                }
+            }, 1000);
+        };
+
+        const updateTimerDisplay = () => {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timer').textContent = 
+                `剩余时间: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+            // 时间不足2分钟时改变颜色
+            if (timeLeft < 120) {
+                document.getElementById('timer').style.background = "#FF0000";
+                document.getElementById('timer').classList.add('animate-bounce');
+            } else {
+                document.getElementById('timer').classList.remove('animate-bounce');
+            }
+        };
+
+        // === 提交考试 ===
+        function submitExam() {
+            clearInterval(timerInterval);
+            disableCheatDetection();
+            
+            // 计算分数
+            const score = calculateScore();
+            currentUser.score = score;
+            
+            // 根据分数确定认证等级
+            determineCertificationLevel(score);
+            
+            // 显示结果
+            showResults(score);
+            
+            // 切换界面
+            document.getElementById('exam-section').classList.remove('active');
+            document.getElementById('result-section').classList.add('active');
+        }
+
+        // === 计算分数 ===
+        const calculateScore = () => {
+            let correctCount = 0;
+            examData.forEach((q, qIndex) => {
+                if (userAnswers[qIndex] === q.answer) {
+                    correctCount++;
+                }
+            });
+            return Math.floor((correctCount / examData.length) * 100);
+        };
+        
+        // === 根据分数确定认证等级 ===
+        const determineCertificationLevel = (score) => {
+            if (score >= 90) {
+                currentUser.level = 'S';
+            } else if (score >= 80) {
+                currentUser.level = 'B';
+            } else if (score >= 70) {
+                currentUser.level = 'A';
+            } else {
+                currentUser.level = '';
+            }
+        };
+
+        // === 显示结果 ===
+        const showResults = (score) => {
+            // 显示用户信息
+            document.getElementById('result-name').textContent = currentUser.name;
+            
+            // 分数滚动动画
+            animateValue('result-score', 0, score, 2000);
+            
+            // 显示认证等级
+            const levelSpan = document.getElementById('result-level');
+            let levelText = '';
+            let levelClass = '';
+            
+            switch(currentUser.level) {
+                case 'S':
+                    levelText = 'CS级：大出生';
+                    levelClass = 'level-s';
+                    break;
+                case 'B':
+                    levelText = 'SB级：小出生';
+                    levelClass = 'level-b';
+                    break;
+                case 'A':
+                    levelText = 'A级：出生';
+                    levelClass = 'level-a';
+                    break;
+                default:
+                    levelText = '狗都不是';
+                    levelClass = 'level-none';
+            }
+            
+            levelSpan.textContent = levelText;
+            levelSpan.className = `cert-level ${levelClass}`;
+            
+            // 考试结果
+            const pass = score >= 70 && !currentUser.cheated;
+            document.getElementById('result-pass').innerHTML = pass ? 
+                '<span class="pass">通过认证</span>' : 
+                '<span class="fail">未通过认证</span>';
+            
+            // 作弊状态
+            const cheatStatus = document.getElementById('cheat-status');
+            if (currentUser.cheated) {
+                cheatStatus.innerHTML = '<span style="color:red;">爱丽丝发现了你在作弊 (' + currentUser.cheatType + ')</span>';
+            } else {
+                cheatStatus.innerHTML = '<span style="color:green;">正常</span>';
+            }
+            
+            // 生成加密成绩单
+            generateEncryptedResult();
+            
+            // 添加结果项动画
+            setTimeout(() => {
+                const resultItems = document.querySelectorAll('.result-item');
+                resultItems.forEach((item, index) => {
+                    item.style.animationDelay = `${index * 0.2}s`;
+                    item.classList.add('animate-fade-in');
+                });
+            }, 100);
+        };
+        
+        // 分数滚动动画
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                obj.textContent = value;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // === 生成加密成绩单 ===
+        const generateEncryptedResult = () => {
+            // 准备加密数据
+            const resultData = {
+                name: currentUser.name,
+                level: currentUser.level,
+                score: currentUser.score,
+                cheated: currentUser.cheated,
+                cheatType: currentUser.cheatType,
+                timestamp: new Date().toISOString(),
+                examId: generateExamId()
+            };
+            
+            // 生成随机密钥
+            encryptionKey = generateRandomKey();
+            
+            // 加密数据
+            const encrypted = CryptoJS.AES.encrypt(
+                JSON.stringify(resultData),
+                encryptionKey
+            ).toString();
+            
+            // 显示加密结果
+            document.getElementById('encryption-key').textContent = encryptionKey;
+            document.getElementById('encrypted-data').textContent = encrypted;
+            
+            // 添加打字机效果
+            animateText(encryptionKey, document.getElementById('encryption-key'));
+            animateText(encrypted, document.getElementById('encrypted-data'));
+        };
+        
+        // 打字机效果动画
+        function animateText(text, element) {
+            element.textContent = '';
+            let i = 0;
+            const speed = 10; // 打字速度（毫秒）
+            
+            function typeWriter() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, speed);
+                }
+            }
+            
+            typeWriter();
+        }
+        
+        // === 生成随机密钥 ===
+        const generateRandomKey = () => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 16; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        };
+        
+        // === 生成唯一考试ID ===
+        const generateExamId = () => {
+            return 'EXAM-' + Date.now().toString(36) + '-' + 
+                Math.floor(Math.random() * 10000).toString(16);
+        };
+        
+        // === 导出成绩单 ===
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const data = {
+                key: encryptionKey,
+                encryptedData: document.getElementById('encrypted-data').textContent
+            };
+            
+            const dataStr = "data:text/json;charset=utf-8," + 
+                encodeURIComponent(JSON.stringify(data));
+            
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `成绩单_${currentUser.name}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+            
+            alert('成绩单已导出！');
+        });
+        
+        // === 验证成绩单按钮 ===
+        document.getElementById('decrypt-link').addEventListener('click', () => {
+            document.getElementById('result-section').classList.remove('active');
+            document.getElementById('decrypt-section').classList.add('active');
+        });
+        
+        // === 解密成绩单 ===
+        document.getElementById('decrypt-btn').addEventListener('click', () => {
+            const key = document.getElementById('decrypt-key-input').value;
+            const encryptedText = document.getElementById('encrypted-text').value;
+            
+            if (!key || !encryptedText) {
+                alert('请输入密钥和加密数据');
+                return;
+            }
+            
+            try {
+                const decryptedBytes = CryptoJS.AES.decrypt(encryptedText, key);
+                const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+                
+                if (!decryptedText) {
+                    throw new Error('解密失败');
+                }
+                
+                const resultData = JSON.parse(decryptedText);
+                
+                // 验证数据结构
+                const isValid = resultData && 
+                    resultData.name && 
+                    resultData.level !== undefined && 
+                    resultData.score !== undefined && 
+                    resultData.timestamp && 
+                    resultData.examId;
+                
+                if (!isValid) {
+                    throw new Error('无效的成绩单格式');
+                }
+                
+                // 获取认证等级名称
+                const getCertName = (level) => {
+                    switch(level) {
+                        case 'S': return '大出生';
+                        case 'B': return '小出生';
+                        case 'A': return '出生';
+                        default: return '未获得认证';
+                    }
+                };
+                
+                let cheatInfo = '';
+                if (resultData.cheated) {
+                    cheatInfo = `<p><strong>作弊记录:</strong> <span style="color:red;">${resultData.cheatType}</span></p>`;
+                }
+                
+                document.getElementById('decrypted-content').innerHTML = `
+                    <p><strong>考生姓名:</strong> ${resultData.name}</p>
+                    <p><strong>认证等级:</strong> ${getCertName(resultData.level)}</p>
+                    <p><strong>考试成绩:</strong> ${resultData.score}分</p>
+                    ${cheatInfo}
+                    <p><strong>考试时间:</strong> ${new Date(resultData.timestamp).toLocaleString()}</p>
+                    <p><strong>考试ID:</strong> ${resultData.examId}</p>
+                `;
+                
+                // 显示验证成功
+                document.getElementById('decrypt-result').className = 'verification-result valid';
+                document.getElementById('decrypt-result').style.display = 'block';
+                
+            } catch (e) {
+                document.getElementById('decrypted-content').innerHTML = `
+                    <p>成绩单验证失败！</p>
+                    <p>错误信息: ${e.message}</p>
+                    <p>可能原因：</p>
+                    <ul>
+                        <li>密钥不正确</li>
+                        <li>加密数据被篡改</li>
+                        <li>文件格式不正确</li>
+                    </ul>
+                `;
+                document.getElementById('decrypt-result').className = 'verification-result invalid';
+                document.getElementById('decrypt-result').style.display = 'block';
+            }
+        });
+        
+        // === 返回考试系统 ===
+        document.getElementById('back-to-exam').addEventListener('click', () => {
+            document.getElementById('decrypt-section').classList.remove('active');
+            document.getElementById('auth-section').classList.add('active');
+            
+            // 重置表单
+            document.getElementById('user-name').value = '';
+            document.getElementById('decrypt-key-input').value = '';
+            document.getElementById('encrypted-text').value = '';
+            document.getElementById('decrypt-result').style.display = 'none';
+            
+            // 重置考试数据
+            timeLeft = 10 * 60;
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            examData = [];
+        });
+        
+        // === 关闭警告框 ===
+        document.getElementById('close-warning').addEventListener('click', () => {
+            document.getElementById('warning-box').style.display = 'none';
+            if (document.body.classList.contains('cheating-detected')) {
+                document.body.classList.remove('cheating-detected');
+            }
+            endExamDueToCheating();
+        });
+        
+        // === 初始化 ===
+        window.addEventListener('DOMContentLoaded', () => {
+            // 确保只显示认证界面
+            document.getElementById('auth-section').classList.add('active');
+            document.getElementById('exam-section').classList.remove('active');
+            document.getElementById('result-section').classList.remove('active');
+            document.getElementById('decrypt-section').classList.remove('active');
+        });
+    </script>
+</body>
+</html>
